@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lightbulb, TrendingUp, AlertCircle, CheckCircle2, BrainCircuit, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,24 +16,28 @@ export function CoachingPanel({ isCapturing }: { isCapturing: boolean }) {
   const [activeSuggestions, setActiveSuggestions] = useState<typeof SUGGESTIONS>([]);
   const [confidence, setConfidence] = useState(85);
   const [sentiment, setSentiment] = useState("Neutral");
+  const indexRef = useRef(0);
 
   useEffect(() => {
     if (!isCapturing) {
       setActiveSuggestions([]);
       setConfidence(0);
       setSentiment("Inactive");
+      indexRef.current = 0;
       return;
     }
 
     setConfidence(85);
     setSentiment("Positive");
 
-    let index = 0;
     const interval = setInterval(() => {
-      if (index < SUGGESTIONS.length) {
-        setActiveSuggestions(prev => [SUGGESTIONS[index], ...prev].slice(0, 3));
-        index++;
+      if (indexRef.current < SUGGESTIONS.length) {
+        const nextSuggestion = SUGGESTIONS[indexRef.current];
+        setActiveSuggestions(prev => [nextSuggestion, ...prev].slice(0, 3));
+        indexRef.current++;
         setConfidence(prev => Math.min(98, prev + Math.random() * 5));
+      } else {
+        clearInterval(interval);
       }
     }, 6000);
 
@@ -105,31 +109,34 @@ export function CoachingPanel({ isCapturing }: { isCapturing: boolean }) {
               </div>
             )}
             
-            {activeSuggestions.map((suggestion, i) => (
-              <motion.div
-                key={suggestion.text}
-                initial={{ opacity: 0, x: 20, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className={cn(
-                  "p-4 rounded-xl border flex gap-3 shadow-sm transition-all",
-                  suggestion.bg,
-                  "border-slate-100"
-                )}
-              >
-                <div className={cn("w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0 shadow-sm", suggestion.color)}>
-                  <suggestion.icon className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-900 uppercase tracking-tight">
-                    {suggestion.type === "tip" ? "Suggestion" : suggestion.type}
-                  </p>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    {suggestion.text}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+            {activeSuggestions.map((suggestion, i) => {
+              if (!suggestion) return null;
+              return (
+                <motion.div
+                  key={suggestion.text + i}
+                  initial={{ opacity: 0, x: 20, y: 10 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className={cn(
+                    "p-4 rounded-xl border flex gap-3 shadow-sm transition-all",
+                    suggestion.bg,
+                    "border-slate-100"
+                  )}
+                >
+                  <div className={cn("w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0 shadow-sm", suggestion.color)}>
+                    <suggestion.icon className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-slate-900 uppercase tracking-tight">
+                      {suggestion.type === "tip" ? "Suggestion" : suggestion.type}
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                      {suggestion.text}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
       </div>
